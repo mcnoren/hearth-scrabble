@@ -1,0 +1,9 @@
+<!doctype html><html><body><p>Preparing a local interface test…</p><script type="module">
+import {createGame,addPlayer,uid} from '/src/engine.ts';
+import {identity,saveGame,saveSeat} from '/src/storage.ts';
+import {roomCode} from '/src/network.ts';
+const code=roomCode();const id=identity();const key='TESTKEY23456X';const g=createGame(code,uid(),'Sunday at the table');
+addPlayer(g,id,'Alex',key);addPlayer(g,uid(),'Jamie','OTHERKEY3456');
+for(const l of 'RETINAS'){const i=g.bag.findIndex(t=>t.letter===l);g.players[0].rack.push(g.bag.splice(i,1)[0]);}
+g.players[1].rack=g.bag.splice(0,7);g.phase='playing';g.turn=0;saveGame(g);saveSeat(code,id,key);location.href='/#room='+code+'&view=rack';
+</script></body></html>

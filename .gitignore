@@ -1,0 +1,10 @@
+node_modules/
+.vite/
+.DS_Store
+.env*
+*.log
+outputs/
+.sites-runtime/
+.wrangler/
+work/
+.npmrc
