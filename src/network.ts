@@ -59,6 +59,16 @@ const options = {
     iceCandidatePoolSize: 2,
   },
 };
+// Keep the actual negotiation failure visible on phones without developer tools.
+function connectionFailure(error: unknown, connection?: DataConnection | null) {
+  const failure = error as { type?: string; message?: string };
+  const pc = connection?.peerConnection;
+  const details = [failure?.type, failure?.message,
+    pc ? `ICE: ${pc.iceConnectionState}; signaling: ${pc.signalingState}` : ""]
+    .filter(Boolean).join(" · ").slice(0, 400);
+  return "The connection to the table failed. " + details +
+    " Retrying automatically; keep both pages open.";
+}
 const CONNECTION_TIMEOUT = 45000;
 const SNAPSHOT_TIMEOUT = 15000;
 export class TableNetwork {
@@ -186,10 +196,11 @@ export class TableNetwork {
             "Cannot reach PeerJS. Check your connection and retry.",
           );
       } else if (e.type === "webrtc") {
+        const reason = connectionFailure(e, this.upstream);
         this.dropUpstream();
         this.setStatus(
           "error",
-          "This browser could not open the device connection. Keep both pages open and try the same non-guest Wi-Fi.",
+          reason,
         );
       } else if (e.type === "browser-incompatible") {
         this.setStatus(
@@ -252,12 +263,13 @@ export class TableNetwork {
           "The table disconnected before a saved game arrived. Try joining again.",
         );
     });
-    c.on("error", () => {
+    c.on("error", (e) => {
       if (this.dead || this.upstream !== c) return;
+      const reason = connectionFailure(e, c);
       this.dropUpstream();
       this.setStatus(
         this.game ? "recovering" : "error",
-        "The connection to the table failed. Retrying automatically; keep the host's table open.",
+        reason,
       );
       if (this.game) this.scheduleElection();
     });
