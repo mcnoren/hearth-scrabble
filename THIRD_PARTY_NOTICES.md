@@ -7,4 +7,4 @@
 - Lucide icons: https://lucide.dev/license, ISC license.
 - DM Sans and Libre Caslon Display: Google Fonts, SIL Open Font License. They are remotely loaded; system fonts are used if unavailable.
 
-The app's board/tile illustrations and favicon were created for this project. No official game logos or third-party board images are bundled. SCRABBLE is referenced descriptively for this unofficial personal project; ownership of the trademark remains with its respective owners.
+The app's board/tile illustrations and Hearth favicon were created for this project. The classic SCRABBLE wordmark (`public/assets/scrabble-logo.svg`) is by Hasbro, sourced from https://commons.wikimedia.org/wiki/File:Scrabble_American_logo.svg and marked public domain as a text logo. The classic board reference is https://commons.wikimedia.org/wiki/File:Scrabble_board_-_English.svg (Antonsusi / Tymewalk, public domain); its reference file is not bundled. SCRABBLE is referenced descriptively for this unofficial personal project; ownership of the trademark remains with its respective owners.

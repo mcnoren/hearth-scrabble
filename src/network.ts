@@ -4,6 +4,7 @@ import {
   addPlayer,
   assertTurn,
   createGame,
+  copyGame,
   evaluate,
   exchange,
   materialize,
@@ -44,15 +45,22 @@ export type Command = {
 };
 type Message = { type: string; [key: string]: unknown };
 const PREFIX = "hearth-v1-";
+// Use multiple live STUN services for direct connections. PeerJS still bundles
+// TURN endpoints that were retired in 2023; they are not a usable relay fallback.
 const options = {
   debug: 0 as const,
   config: {
     iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:global.stun.twilio.com:3478" },
+      {
+        urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"],
+      },
+      { urls: "stun:stun.cloudflare.com:3478" },
     ],
+    iceCandidatePoolSize: 2,
   },
 };
+const CONNECTION_TIMEOUT = 45000;
+const SNAPSHOT_TIMEOUT = 15000;
 export class TableNetwork {
   game: Game | null;
   status: Status = "connecting";
@@ -84,6 +92,9 @@ export class TableNetwork {
   private myPlayer: string | null = null;
   private myName = "Table display";
   private upstreamAttempt = 0;
+  private upstreamOpened = 0;
+  private snapshotReceived = false;
+  private lastDial = 0;
   private replicatedVersion = -1;
   constructor(
     public code: string,
@@ -140,7 +151,7 @@ export class TableNetwork {
       this.dial();
     });
     p.on("disconnected", () => {
-      if (!this.dead && !p.destroyed) {
+      if (!this.dead && this.peer === p && !p.destroyed) {
         try {
           p.reconnect();
         } catch {
@@ -152,8 +163,12 @@ export class TableNetwork {
       }
     });
     p.on("error", (e) => {
-      if (this.dead) return;
+      if (this.dead || this.peer !== p) return;
+      // The host's rendezvous peer owns incoming connections. Errors from the
+      // retired outbound lookup must not turn a healthy host into an error.
+      if (this.isHost) return;
       if (e.type === "peer-unavailable") {
+        if (!this.upstream?.open) this.dropUpstream();
         if (this.game || this.creating) this.scheduleElection(500);
         else
           this.setStatus(
@@ -171,9 +186,22 @@ export class TableNetwork {
             "Cannot reach PeerJS. Check your connection and retry.",
           );
       } else if (e.type === "webrtc") {
+        this.dropUpstream();
         this.setStatus(
           "error",
-          "This network blocked the direct connection. Try the same Wi-Fi or a different network.",
+          "This browser could not open the device connection. Keep both pages open and try the same non-guest Wi-Fi.",
+        );
+      } else if (e.type === "browser-incompatible") {
+        this.setStatus(
+          "error",
+          "This browser has WebRTC disabled or does not support device connections. Open this link in Safari, Chrome, Edge, or Firefox with WebRTC enabled.",
+        );
+      } else {
+        this.setStatus(
+          "error",
+          "PeerJS could not register this device (" +
+            e.type +
+            "). Try again after checking your connection.",
         );
       }
     });
@@ -181,20 +209,24 @@ export class TableNetwork {
   private dial() {
     if (this.dead || this.isHost || !this.peer?.open || this.upstream?.open)
       return;
-    if (this.upstream && Date.now() - this.upstreamAttempt < 12000) return;
-    this.upstream?.close();
-    this.upstreamAttempt = Date.now();
+    // Do not tear down an ICE negotiation every few seconds. Relay candidate
+    // gathering can take longer than a direct same-machine connection.
+    if (this.upstream) return;
+    if (Date.now() - this.lastDial < 3000) return;
+    this.upstreamAttempt = this.lastDial = Date.now();
+    this.upstreamOpened = 0;
+    this.snapshotReceived = false;
     const c = this.peer.connect(PREFIX + "room-" + this.code, {
       reliable: true,
       serialization: "json",
     });
     this.upstream = c;
     c.on("open", () => {
-      if (this.dead) {
+      if (this.dead || this.upstream !== c || this.isHost) {
         c.close();
         return;
       }
-      this.lastHost = Date.now();
+      this.upstreamOpened = this.lastHost = Date.now();
       this.send(c, {
         type: "hello",
         node: this.node,
@@ -204,7 +236,10 @@ export class TableNetwork {
         code: this.code,
       });
     });
-    c.on("data", (d) => this.receive(d as Message, c, false));
+    c.on("data", (d) => {
+      if (this.upstream === c && !this.isHost)
+        this.receive(d as Message, c, false);
+    });
     c.on("close", () => {
       if (this.dead || this.upstream !== c) return;
       this.upstream = null;
@@ -218,8 +253,21 @@ export class TableNetwork {
         );
     });
     c.on("error", () => {
+      if (this.dead || this.upstream !== c) return;
+      this.dropUpstream();
+      this.setStatus(
+        this.game ? "recovering" : "error",
+        "The connection to the table failed. Retrying automatically; keep the host's table open.",
+      );
       if (this.game) this.scheduleElection();
     });
+  }
+  private dropUpstream() {
+    const previous = this.upstream;
+    this.upstream = null;
+    this.upstreamOpened = 0;
+    this.snapshotReceived = false;
+    previous?.close();
   }
   private scheduleElection(delay?: number) {
     if (this.dead || this.isHost || this.claiming || this.election) return;
@@ -279,18 +327,36 @@ export class TableNetwork {
       c.on("error", () => {});
     });
     b.on("error", (e) => {
-      if (this.dead) return;
+      if (this.dead || this.beacon !== b) return;
+      // PeerJS forwards individual WebRTC failures to the parent Peer. Such a
+      // failure is not a failed room registration: keep the host and its other
+      // device connections alive.
+      if (e.type === "webrtc" || e.type === "peer-unavailable") return;
+      if (
+        this.isHost &&
+        (e.type === "network" ||
+          e.type === "socket-error" ||
+          e.type === "server-error" ||
+          e.type === "socket-closed")
+      ) {
+        if (b.disconnected && !b.destroyed) {
+          try {
+            b.reconnect();
+          } catch {
+            /* Keep existing data channels alive. */
+          }
+        }
+        return;
+      }
       this.claiming = false;
       b.destroy();
       if (this.beacon === b) this.beacon = null;
-      if (e.type === "unavailable-id") {
-        this.dial();
-      } else {
+      if (e.type === "unavailable-id") this.dial();
+      else
         this.setStatus(
           "offline",
           "PeerJS is unavailable. Your saved game is safe on this device.",
         );
-      }
     });
     b.on("disconnected", () => {
       if (this.dead) return;
@@ -358,7 +424,7 @@ export class TableNetwork {
           offered.version > this.game.version
         ) {
           const epoch = this.game.epoch;
-          this.game = structuredClone(offered);
+          this.game = copyGame(offered);
           this.game.leader = this.node;
           this.game.epoch = Math.max(epoch, offered.epoch) + 1;
           this.store();
@@ -421,6 +487,7 @@ export class TableNetwork {
           this.game = next;
           this.store();
         }
+        this.snapshotReceived = true;
         this.members = Array.isArray(m.members) ? (m.members as Member[]) : [];
         this.lastHost = Date.now();
         if (!this.storageError)
@@ -452,7 +519,7 @@ export class TableNetwork {
     if (!cmd || typeof cmd.id !== "string" || typeof cmd.type !== "string")
       throw Error("Invalid request.");
     if (this.game.receipts.includes(cmd.id)) return { ok: true };
-    const g = structuredClone(this.game);
+    const g = copyGame(this.game);
     const data = cmd.payload || {};
     let result: unknown = { ok: true };
     if (cmd.type === "join") {
@@ -606,28 +673,68 @@ export class TableNetwork {
       this.updateMembers();
       for (const c of this.links.values())
         this.send(c, { type: "pong", members: this.members });
-    } else {
-      if (this.upstream?.open) {
-        this.send(this.upstream, {
-          type: "ping",
-          playerId: this.myPlayer,
-          name: this.myName,
-        });
-        if (Date.now() - this.lastHost > 12000) {
-          this.upstream.close();
-          this.upstream = null;
-          this.setStatus("recovering");
-          this.scheduleElection();
-        }
-      } else {
-        this.dial();
-        if (this.game || this.creating) this.scheduleElection();
-      }
+      return;
     }
+    const now = Date.now();
+    if (this.upstream?.open) {
+      this.send(this.upstream, {
+        type: "ping",
+        playerId: this.myPlayer,
+        name: this.myName,
+      });
+      if (
+        !this.snapshotReceived &&
+        now - this.upstreamOpened > SNAPSHOT_TIMEOUT
+      ) {
+        this.dropUpstream();
+        this.setStatus(
+          "error",
+          "The devices connected, but the table did not send its saved game. Reload the host's page, then try again.",
+        );
+      } else if (now - this.lastHost > 15000) {
+        this.dropUpstream();
+        this.setStatus(this.game ? "recovering" : "connecting");
+        if (this.game) this.scheduleElection();
+      }
+      return;
+    }
+    if (this.upstream && now - this.upstreamAttempt >= CONNECTION_TIMEOUT) {
+      this.dropUpstream();
+      this.setStatus(
+        "error",
+        "The table is online, but the device connection timed out. Keep both pages open and try the same non-guest Wi-Fi, with VPNs off. Some networks need a TURN relay to connect.",
+      );
+      if (this.game) this.scheduleElection();
+      return;
+    }
+    if (!this.peer || this.peer.destroyed) {
+      this.connectPeer();
+      return;
+    }
+    if (this.peer.disconnected) {
+      try {
+        this.peer.reconnect();
+      } catch {
+        /* Retry on the next tick. */
+      }
+      return;
+    }
+    this.dial();
+    if (!this.upstream && (this.game || this.creating)) this.scheduleElection();
   }
   retry() {
     if (this.dead) return;
-    this.error = "";
+    if (this.isHost) {
+      if (this.beacon?.disconnected) {
+        try {
+          this.beacon.reconnect();
+        } catch {}
+      }
+      return;
+    }
+    this.dropUpstream();
+    this.lastDial = 0;
+    this.setStatus(this.game ? "recovering" : "connecting");
     if (!this.peer?.open) this.connectPeer();
     else {
       this.dial();

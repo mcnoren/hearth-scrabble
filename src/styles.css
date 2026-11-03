@@ -2609,9 +2609,867 @@ svg {
   }
 }
 @media (max-width: 760px) {
-  .rack-mode:has(.rack-panel) { padding-bottom: 235px; }
-  .rack-mode .rack-panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; margin: 0; padding: 14px max(14px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)); border-radius: 12px 12px 0 0; border-width: 1px 0 0; background: #fffcf5; box-shadow: 0 -8px 28px #263b2820; }
-  .rack-mode .rack-panel .rack { max-width: none; }
-  .rack-mode .rack-panel .tile, .rack-mode .rack-panel .rack-empty { max-width: none; }
-  .game-error { position: sticky; top: 8px; z-index: 25; }
+  .rack-mode:has(.rack-panel) {
+    padding-bottom: 235px;
+  }
+  .rack-mode .rack-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 15;
+    margin: 0;
+    padding: 14px max(14px, env(safe-area-inset-left))
+      calc(10px + env(safe-area-inset-bottom));
+    border-radius: 12px 12px 0 0;
+    border-width: 1px 0 0;
+    background: #fffcf5;
+    box-shadow: 0 -8px 28px #263b2820;
+  }
+  .rack-mode .rack-panel .rack {
+    max-width: none;
+  }
+  .rack-mode .rack-panel .tile,
+  .rack-mode .rack-panel .rack-empty {
+    max-width: none;
+  }
+  .game-error {
+    position: sticky;
+    top: 8px;
+    z-index: 25;
+  }
+}
+
+/* A table is a viewport, not a document. Only dialogs and the move log scroll. */
+html.at-table,
+html.at-table body,
+html.at-table #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+html.at-table #root {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #e7e1d1;
+}
+.game-header {
+  height: 46px;
+  min-height: 46px;
+  max-width: none;
+  width: 100%;
+  padding: 0 18px;
+  background: #f7f3e7;
+}
+.game-header .logo-tile {
+  width: 25px;
+  height: 28px;
+  font-size: 21px;
+}
+.game-header .logo-tile sub {
+  font-size: 6px;
+  bottom: 3px;
+  right: 3px;
+}
+.game-header .logo {
+  gap: 8px;
+}
+.game-header .logo > span:nth-child(2) {
+  font-size: 21px;
+}
+.game-header .logo small {
+  font-size: 5px;
+  margin-top: 3px;
+}
+.game-header .header-right {
+  gap: 15px;
+}
+.game-header .connection {
+  font-size: 9px;
+}
+.game-shell {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 8px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 6px;
+}
+.game-shell .table-heading {
+  min-height: 39px;
+  margin: 0;
+  flex-shrink: 0;
+}
+.game-shell .table-heading > .eyebrow,
+.game-shell .table-heading > div > .eyebrow {
+  display: none;
+}
+.game-shell .table-heading h1 {
+  margin: 0;
+  font-size: 25px;
+  line-height: 1.1;
+  max-width: none;
+}
+.game-shell .game-phase {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.game-shell .table-heading-actions {
+  gap: 14px;
+}
+.game-shell .room-code {
+  grid-template-columns: auto auto;
+  column-gap: 7px;
+}
+.game-shell .room-code > span {
+  display: none;
+}
+.game-shell .room-code strong {
+  font-size: 14px;
+}
+.game-shell .invite-button {
+  min-height: 30px;
+  padding: 6px 10px;
+}
+.game-shell .game-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 204px minmax(0, 1fr);
+  gap: 14px;
+  overflow: hidden;
+}
+.game-shell .table-sidebar {
+  height: 100%;
+  min-height: 0;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.game-shell .sidebar-heading {
+  margin: 0 0 8px;
+}
+.game-shell .player {
+  padding: 9px 8px;
+}
+.game-shell .player-name > strong {
+  font-size: 11px;
+}
+.game-shell .player-name > small {
+  font-size: 8px;
+}
+.game-shell .empty-seat {
+  padding: 7px 8px;
+}
+.game-shell .empty-seat > span {
+  width: 27px;
+  height: 27px;
+}
+.game-shell .players,
+.game-shell .lobby-controls,
+.game-shell .bag-counter {
+  flex-shrink: 0;
+}
+.game-shell .lobby-controls {
+  margin: 12px 0 16px;
+  gap: 7px;
+}
+.game-shell .lobby-controls .primary,
+.game-shell .lobby-controls .secondary {
+  min-height: 35px;
+  font-size: 11px;
+  padding: 8px;
+}
+.game-shell .lobby-controls > small {
+  font-size: 8px;
+}
+.game-shell .bag-counter {
+  margin: 13px 0;
+  padding: 9px 0;
+}
+.game-shell .history-section {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.game-shell .history {
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+.game-shell .saved-indicator {
+  margin-top: 6px;
+  padding: 9px 0 0;
+  flex-shrink: 0;
+  font-size: 7px;
+}
+.game-shell .board-area {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+}
+.game-shell .board-toolbar {
+  min-height: 24px;
+  flex-shrink: 0;
+  margin: 0;
+}
+.game-shell .board-scroll {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.game-shell .board-frame {
+  flex-shrink: 0;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  aspect-ratio: 1;
+  position: relative;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: #1e5b45;
+  box-shadow:
+    inset 0 0 0 1px #0b412e,
+    inset 0 0 0 4px #387259,
+    0 2px 4px #1a312d35;
+  container-type: inline-size;
+  overflow: hidden;
+}
+.game-shell .board {
+  position: absolute;
+  inset: 3.25% 2.2% 8.7% 3.25%;
+  aspect-ratio: auto;
+  display: grid;
+  grid-template-columns: repeat(15, minmax(0, 1fr));
+  grid-template-rows: repeat(15, minmax(0, 1fr));
+  gap: 1px;
+  background: #245944;
+  border: 1px solid #123e2b;
+}
+.game-shell .cell {
+  aspect-ratio: auto;
+  min-height: 0;
+  border-radius: 0;
+  background: #ebe6ce;
+  box-shadow: inset 0 0 0 0.35px #697b5a;
+  overflow: visible;
+}
+.game-shell .cell.TW {
+  background: #ed3f39 !important;
+}
+.game-shell .cell.DW {
+  background: #f3b5b2 !important;
+}
+.game-shell .cell.TL {
+  background: #2176b3 !important;
+}
+.game-shell .cell.DL {
+  background: #98d5e3 !important;
+}
+.game-shell .cell.occupied {
+  background: #ddbf82 !important;
+}
+.game-shell .premium-label {
+  color: #152e27;
+  font-family: Arial, sans-serif;
+  font-size: 1.01cqw;
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  z-index: 1;
+}
+.game-shell .TW .premium-label,
+.game-shell .TL .premium-label {
+  color: #fffbee;
+  text-shadow: 0 0.35px 0 #26433370;
+}
+.game-shell .center-star {
+  font-family: Arial, sans-serif;
+  color: #153e30;
+  font-size: 4.7cqw;
+  line-height: 1;
+}
+.game-shell .cell.cursor {
+  outline: 2px solid #d5a015;
+  outline-offset: -2px;
+}
+.game-shell .board-tile {
+  border-radius: 1px;
+  font-family: Arial, sans-serif;
+  font-size: 3.7cqw;
+  font-weight: 600;
+  color: #252a20;
+  background: linear-gradient(125deg, #f8e7bb, #e7cc91);
+  box-shadow:
+    inset 0 1px 1px #fffbe3,
+    inset 0 -1px 0 #c5a36a,
+    0 1px 1px #294e2c90;
+}
+.game-shell .board-tile sub {
+  font-size: 1.12cqw;
+  right: 6%;
+  bottom: 5%;
+  color: #303026;
+}
+.game-shell .column-labels {
+  inset: 1% 2.2% auto 3.25%;
+  height: 1.4%;
+  color: #d9e0c9;
+  font-size: 0.85cqw;
+  line-height: 1;
+}
+.game-shell .row-labels {
+  inset: 3.25% auto 8.7% 0.9%;
+  width: 1.2%;
+  color: #d9e0c9;
+  font-size: 0.85cqw;
+  line-height: 1;
+}
+.game-shell .board-footer {
+  position: absolute;
+  inset: auto 3.25% 1.3% 3.25%;
+  height: 6%;
+  padding: 0;
+  gap: 3%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.game-shell img.board-wordmark {
+  display: block;
+  width: 29%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+}
+.game-shell .board-distribution {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25cqw;
+  flex: 1;
+  font:
+    0.77cqw/1.1 Arial,
+    sans-serif;
+  color: #f2edd2;
+  letter-spacing: 0.035em;
+}
+.game-shell .board-distribution strong {
+  font-size: 0.75cqw;
+  letter-spacing: 0.15em;
+}
+.game-shell .board-edition {
+  font:
+    0.75cqw/1.5 Arial,
+    sans-serif !important;
+  letter-spacing: 0.13em !important;
+  color: #e2e4cd;
+  text-align: right;
+}
+.game-shell .board-legend,
+.game-shell .game-footer,
+.game-shell .table-welcome,
+.game-shell .watching-card,
+.game-shell .finished-card {
+  display: none;
+}
+.game-shell .compact-seat {
+  font-size: 9px;
+  border: 1px solid #c5cfb8;
+  border-radius: 4px;
+  padding: 3px 7px;
+}
+.game-shell .rack-panel {
+  position: static;
+  width: 100%;
+  max-width: 740px;
+  margin: 3px auto 0;
+  padding: 10px 14px 7px;
+  z-index: auto;
+  box-shadow: 0 1px 4px #273c2510;
+  flex-shrink: 0;
+  border: 1px solid #c8cdb8;
+  border-radius: 6px;
+  background: #fbf7ea;
+}
+.game-shell .rack-and-score {
+  margin-top: 8px;
+  gap: 12px;
+}
+.game-shell .rack {
+  max-width: 470px;
+  padding: 5px 7px 7px;
+  gap: 5px;
+}
+.game-shell .tile,
+.game-shell .rack-empty {
+  max-width: 45px;
+  max-height: 47px;
+  border-radius: 2px;
+  font-family: Arial, sans-serif;
+  font-size: 26px;
+  font-weight: 500;
+}
+.game-shell .tile sub {
+  font-size: 8px;
+}
+.game-shell .rack-hint {
+  margin: 8px 0;
+  min-height: 11px;
+  font-size: 9px;
+}
+.game-shell .rack-actions {
+  padding-top: 5px;
+}
+.game-shell .rack-actions > div {
+  gap: 13px;
+}
+.game-shell .rack-heading .private-label {
+  display: none;
+}
+.game-shell .network-banner,
+.game-shell .game-error,
+.game-shell .notice {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  margin: 0;
+  font-size: 10px;
+}
+.game-shell .absent-banner {
+  position: absolute;
+  bottom: 12px;
+  left: 20px;
+  z-index: 10;
+  margin: 0;
+  padding: 7px 10px;
+  font-size: 9px;
+  max-width: 430px;
+  box-shadow: 0 3px 16px #26382922;
+}
+.game-shell .connecting-screen {
+  min-height: 0;
+  height: 100%;
+}
+.modal-history {
+  max-height: 55dvh;
+}
+.results-list > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid #e3e5d7;
+}
+.results-list > div > span {
+  color: #b17e35;
+  width: 22px;
+}
+.results-list > div > strong {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+}
+.results-list > div > b {
+  font-size: 25px;
+}
+.focus-hidden {
+  display: none !important;
+}
+.focus-board .table-heading,
+.focus-board .table-sidebar,
+.focus-board .rack-panel {
+  display: none !important;
+}
+.game-shell.focus-board {
+  padding: 4px 8px 8px !important;
+}
+.game-shell.focus-board .game-layout {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+.game-shell.focus-board .board-area {
+  display: flex !important;
+}
+
+@media (max-width: 760px) {
+  .game-header {
+    height: 38px;
+    min-height: 38px;
+    padding: 0 10px;
+  }
+  .game-header .logo-tile {
+    width: 22px;
+    height: 25px;
+    font-size: 18px;
+  }
+  .game-header .logo > span:nth-child(2) {
+    font-size: 19px;
+  }
+  .game-header .header-right {
+    gap: 8px;
+  }
+  .game-header .connection {
+    font-size: 0;
+  }
+  .game-shell,
+  .game-shell.rack-mode:has(.rack-panel) {
+    padding: 4px 5px max(5px, env(safe-area-inset-bottom));
+    gap: 4px;
+  }
+  .game-shell .table-heading {
+    min-height: 33px;
+    gap: 8px;
+    padding: 0 5px;
+  }
+  .game-shell .table-heading h1 {
+    font-family: Georgia, serif;
+    font-size: 16px;
+    gap: 6px;
+    max-width: 58vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .game-shell .game-phase {
+    font-size: 5px;
+    padding: 3px 4px;
+  }
+  .game-shell .table-heading-actions {
+    gap: 6px;
+  }
+  .game-shell .room-code strong {
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .game-shell .room-code svg {
+    width: 10px;
+  }
+  .game-shell .invite-button {
+    min-height: 26px;
+    height: 26px;
+    padding: 5px 7px;
+  }
+  .game-shell .game-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .game-shell .table-sidebar {
+    display: contents;
+  }
+  .game-shell .table-sidebar > .sidebar-heading,
+  .game-shell .history-section,
+  .game-shell .bag-counter,
+  .game-shell .saved-indicator {
+    display: none;
+  }
+  .game-shell .players {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    height: 37px;
+    order: 0;
+  }
+  .game-shell .player {
+    padding: 4px 6px;
+    min-width: 0;
+    flex: 1;
+    gap: 5px;
+    border-radius: 3px;
+  }
+  .game-shell .avatar {
+    width: 20px;
+    height: 20px;
+    font-size: 8px;
+  }
+  .game-shell .player-name > strong {
+    font-size: 8px;
+  }
+  .game-shell .player-name > small {
+    display: none;
+  }
+  .game-shell .score {
+    font-size: 19px;
+    line-height: 1;
+  }
+  .game-shell .score > small {
+    display: none;
+  }
+  .game-shell .empty-seat {
+    flex: 1;
+    min-width: 0;
+    padding: 4px;
+    gap: 4px;
+    height: 37px;
+    justify-content: center;
+    border-radius: 3px;
+  }
+  .game-shell .empty-seat > span {
+    width: 18px;
+    height: 18px;
+  }
+  .game-shell .empty-seat svg {
+    width: 12px;
+  }
+  .game-shell .empty-seat small {
+    font-size: 7px;
+    white-space: nowrap;
+  }
+  .game-shell .lobby-controls {
+    order: 1;
+    margin: 0;
+    display: flex;
+    gap: 5px;
+    min-height: 29px;
+  }
+  .game-shell .lobby-controls > button,
+  .game-shell .lobby-controls > .seated-note {
+    flex: 1;
+    margin: 0;
+    padding: 5px;
+    font-size: 9px;
+    min-height: 28px;
+  }
+  .game-shell .lobby-controls > small {
+    display: none;
+  }
+  .game-shell .board-area {
+    order: 2;
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    gap: 4px;
+  }
+  .game-shell .board-toolbar {
+    min-height: 22px;
+    padding: 0 4px;
+  }
+  .game-shell .turn-status {
+    font-size: 8px;
+  }
+  .game-shell .board-tools {
+    gap: 7px;
+  }
+  .game-shell .board-tools > button:first-child {
+    font-size: 8px;
+  }
+  .game-shell .board-tools .icon-button {
+    height: 22px;
+    width: 22px;
+  }
+  .game-shell .board-scroll {
+    flex: 1;
+  }
+  .game-shell .rack-panel {
+    max-width: none;
+    padding: 8px 9px 5px;
+    margin: 0;
+    border-radius: 4px;
+    border-width: 1px;
+  }
+  .game-shell .rack-heading .eyebrow {
+    font-size: 7px;
+  }
+  .game-shell .rack-and-score {
+    margin-top: 7px;
+    gap: 8px;
+  }
+  .game-shell .rack {
+    gap: 4px;
+    padding: 5px 6px 7px;
+  }
+  .game-shell .tile,
+  .game-shell .rack-empty {
+    max-width: none;
+    height: auto;
+    max-height: 42px;
+    aspect-ratio: 1.03;
+    font-size: 23px;
+  }
+  .game-shell .tile sub {
+    font-size: 7px;
+  }
+  .game-shell .move-score {
+    min-width: 34px;
+  }
+  .game-shell .move-score strong {
+    font-size: 29px;
+  }
+  .game-shell .rack-hint {
+    margin: 7px 0;
+    font-size: 7px;
+    line-height: 1.25;
+    min-height: 9px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .game-shell .rack-actions {
+    gap: 4px;
+    padding-top: 4px;
+  }
+  .game-shell .rack-actions > div {
+    gap: 10px;
+  }
+  .game-shell .rack-actions .text-button {
+    font-size: 8px;
+  }
+  .game-shell .rack-actions .icon-button {
+    width: 21px;
+    height: 24px;
+  }
+  .game-shell .play-button {
+    min-height: 29px;
+    font-size: 9px;
+    padding: 6px 8px;
+  }
+  .game-shell .absent-banner {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    max-width: none;
+    font-size: 8px;
+  }
+}
+@media (max-height: 540px) and (min-aspect-ratio: 1/1) {
+  .game-header {
+    height: 30px;
+    min-height: 30px;
+  }
+  .game-header .logo-tile {
+    display: none;
+  }
+  .game-header .logo small {
+    display: none;
+  }
+  .game-header .logo > span:nth-child(2) {
+    font-size: 18px;
+  }
+  .game-shell {
+    padding-top: 2px;
+    gap: 3px;
+  }
+  .game-shell .table-heading {
+    min-height: 28px;
+  }
+  .game-shell .table-heading h1 {
+    font-size: 18px;
+  }
+  .game-shell .game-layout {
+    gap: 8px;
+    grid-template-columns: 170px minmax(0, 1fr);
+  }
+  .game-shell .rack-panel {
+    max-width: none;
+    margin: 0;
+    padding: 8px;
+  }
+  .game-shell.rack-mode:has(.rack-panel) .board-area {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 175px;
+    grid-template-rows: 23px minmax(0, 1fr);
+    gap: 5px 10px;
+  }
+  .game-shell.rack-mode:has(.rack-panel) .board-toolbar {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .game-shell.rack-mode:has(.rack-panel) .board-scroll {
+    grid-column: 1;
+    grid-row: 2;
+    height: 100%;
+  }
+  .game-shell.rack-mode:has(.rack-panel) .rack-panel {
+    grid-column: 2;
+    grid-row: 1/3;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .game-shell .rack-heading {
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .game-shell .rack-and-score {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .game-shell .rack {
+    width: 100%;
+    flex: none;
+    gap: 3px;
+    padding: 5px;
+  }
+  .game-shell .tile,
+  .game-shell .rack-empty {
+    font-size: 16px;
+  }
+  .game-shell .tile sub {
+    font-size: 5px;
+    bottom: 2px;
+    right: 2px;
+  }
+  .game-shell .move-score strong {
+    font-size: 25px;
+  }
+  .game-shell .move-score > span {
+    font-size: 6px;
+  }
+  .game-shell .rack-hint {
+    white-space: normal;
+    line-height: 1.4;
+    margin: 10px 0;
+  }
+  .game-shell .rack-actions {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .game-shell .rack-actions > div {
+    justify-content: center;
+    gap: 13px;
+    width: 100%;
+  }
+  .game-shell .rack-actions > div:nth-child(2) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+/* Keep all 225 cells square; the lower border carries the printed branding. */
+.game-shell .board {
+  inset: 3.3% 5% 6.7% 5%;
+}
+.game-shell .column-labels {
+  left: 5%;
+  right: 5%;
+  top: 1.25%;
+}
+.game-shell .row-labels {
+  top: 3.3%;
+  bottom: 6.7%;
+  left: 2.3%;
+}
+.game-shell .board-footer {
+  left: 5%;
+  right: 5%;
+  bottom: 0.8%;
+  height: 5.1%;
+}
+.game-shell img.board-wordmark {
+  width: 19%;
 }

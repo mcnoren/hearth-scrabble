@@ -174,7 +174,17 @@ mark("DL", [
   [14, 11],
 ]);
 export function uid() {
-  return crypto.randomUUID();
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  // Older Safari versions support secure random bytes but not randomUUID.
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+export function copyGame(game: Game): Game {
+  // Game snapshots are plain JSON; this also works before Safari 15.4.
+  return JSON.parse(JSON.stringify(game)) as Game;
 }
 export function shuffle<T>(input: T[]): T[] {
   const a = [...input];

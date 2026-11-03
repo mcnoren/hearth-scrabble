@@ -256,3 +256,29 @@ test("saved snapshots survive serialization and reject corrupt backups", async (
   );
   assert.equal(validateSnapshot(null), false);
 });
+
+test("older Safari can create secure game and device identifiers without randomUUID", async () => {
+  const { uid, copyGame } = await import("../src/engine.ts");
+  const descriptor = Object.getOwnPropertyDescriptor(crypto, "randomUUID");
+  Object.defineProperty(crypto, "randomUUID", {
+    value: undefined,
+    configurable: true,
+  });
+  try {
+    const ids = Array.from({ length: 50 }, () => uid());
+    assert.equal(new Set(ids).size, 50);
+    for (const id of ids)
+      assert.match(
+        id,
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+    const game = createGame("GARDEN", "host");
+    const copy = copyGame(game);
+    copy.bag.pop();
+    assert.equal(game.bag.length, 100);
+    assert.equal(copy.bag.length, 99);
+  } finally {
+    if (descriptor) Object.defineProperty(crypto, "randomUUID", descriptor);
+    else delete (crypto as unknown as { randomUUID?: unknown }).randomUUID;
+  }
+});

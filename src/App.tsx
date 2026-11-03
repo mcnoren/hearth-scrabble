@@ -311,6 +311,8 @@ export default function App() {
   const [copied, setCopied] = useState("");
   const [sound, setSound] = useState(false);
   const [zoom, setZoom] = useState(false);
+  const [boardSize, setBoardSize] = useState(0);
+  const boardStage = useRef<HTMLDivElement>(null);
   const [blankTarget, setBlankTarget] = useState<{
     tileId: string;
     index: number;
@@ -348,6 +350,10 @@ export default function App() {
   useEffect(() => {
     if (!net) return;
     return net.subscribe(() => render((x) => x + 1));
+  }, [net]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("at-table", !!net);
+    return () => document.documentElement.classList.remove("at-table");
   }, [net]);
   const g = net?.game || null;
   const seat = g ? readSeat(g.code) : null;
@@ -520,6 +526,26 @@ export default function App() {
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [g, myTurn, busy, modal, blankTarget, direction]);
+  useEffect(() => {
+    const stage = boardStage.current;
+    if (!stage) return;
+    const fit = () => {
+      const { width, height } = stage.getBoundingClientRect();
+      const size = Math.max(0, Math.floor(Math.min(width, height)) - 2);
+      setBoardSize((previous) => (previous === size ? previous : size));
+    };
+    fit();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", fit);
+      return () => window.removeEventListener("resize", fit);
+    }
+    const observer = new ResizeObserver(fit);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [net, g?.phase, view, !!me, zoom]);
+  useEffect(() => {
+    if (g?.phase === "finished") setModal("results");
+  }, [g?.phase]);
   function openTable(
     code: string,
     creating = false,
@@ -665,7 +691,9 @@ export default function App() {
     }
   }
   const header = (
-    <header className="header">
+    <header
+      className={`header ${net ? "game-header" : ""} ${net && zoom ? "focus-hidden" : ""}`}
+    >
       <Logo onClick={net ? () => setModal("leave") : goHome} />
       <div className="header-right">
         {net ? (
@@ -888,7 +916,7 @@ export default function App() {
         </main>
       ) : (
         <main
-          className={`game-shell ${view === "table" ? "table-mode" : "rack-mode"}`}
+          className={`game-shell ${view === "table" ? "table-mode" : "rack-mode"} ${zoom ? "focus-board" : ""}`}
         >
           {!g ? (
             <div className="connecting-screen">
@@ -1164,6 +1192,22 @@ export default function App() {
                       {busy && <LoaderCircle size={14} className="spin" />}
                     </div>
                     <div className="board-tools">
+                      {g.phase === "playing" && !me && (
+                        <button
+                          className="compact-seat"
+                          onClick={() => setModal("recover")}
+                        >
+                          Recover seat
+                        </button>
+                      )}
+                      {g.phase === "finished" && (
+                        <button
+                          className="compact-seat"
+                          onClick={() => setModal("results")}
+                        >
+                          Final scores
+                        </button>
+                      )}
                       <button
                         className={view === "table" ? "active" : ""}
                         title={
@@ -1188,15 +1232,22 @@ export default function App() {
                         <span>{view === "table" ? "Table" : "My rack"}</span>
                       </button>
                       <IconButton
-                        label={zoom ? "Fit board" : "Enlarge board"}
+                        label={zoom ? "Show table controls" : "Focus on board"}
                         onClick={() => setZoom(!zoom)}
                       >
                         <Maximize2 size={16} />
                       </IconButton>
                     </div>
                   </div>
-                  <div className={`board-scroll ${zoom ? "zoomed" : ""}`}>
-                    <div className="board-frame">
+                  <div className="board-scroll" ref={boardStage}>
+                    <div
+                      className="board-frame"
+                      style={
+                        boardSize
+                          ? { width: boardSize, height: boardSize }
+                          : undefined
+                      }
+                    >
                       <div className="column-labels">
                         {Array.from({ length: 15 }, (_, i) => (
                           <span key={i}>{i + 1}</span>
@@ -1293,10 +1344,32 @@ export default function App() {
                         })}
                       </div>
                       <div className="board-footer">
-                        <span className="board-wordmark">
-                          SCRABBLE<span>®</span>
+                        <img
+                          className="board-wordmark"
+                          src={`${import.meta.env.BASE_URL}assets/scrabble-logo.svg`}
+                          alt="SCRABBLE"
+                        />
+                        <div
+                          className="board-distribution"
+                          aria-label="Classic English tile distribution"
+                        >
+                          <strong>LETTER DISTRIBUTION</strong>
+                          <span>
+                            A–9 · B–2 · C–2 · D–4 · E–12 · F–2 · G–3 · H–2 · I–9
+                          </span>
+                          <span>
+                            J–1 · K–1 · L–4 · M–2 · N–6 · O–8 · P–2 · Q–1 · R–6
+                          </span>
+                          <span>
+                            S–4 · T–6 · U–4 · V–2 · W–2 · X–1 · Y–2 · Z–1 ·
+                            BLANK–2
+                          </span>
+                        </div>
+                        <span className="board-edition">
+                          BRAND
+                          <br />
+                          CROSSWORD GAME
                         </span>
-                        <span>EVERY LETTER COUNTS.</span>
                       </div>
                     </div>
                   </div>
@@ -1578,6 +1651,62 @@ export default function App() {
           e.target.value = "";
         }}
       />
+      {modal === "history" && g && (
+        <Modal title="The word so far." onClose={() => setModal("")}>
+          {g.history.length ? (
+            <ol className="history modal-history">
+              {[...g.history].reverse().map((h, i) => (
+                <li key={h.id}>
+                  <span className="move-number">{g.history.length - i}</span>
+                  <div>
+                    <strong>
+                      {h.kind === "play" || h.kind === "bingo"
+                        ? h.words.join(" · ")
+                        : h.kind}
+                    </strong>
+                    <small>{h.player}</small>
+                  </div>
+                  <b>{h.score ? `+${h.score}` : "—"}</b>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="modal-intro">
+              The first word is still waiting to be played.
+            </p>
+          )}
+        </Modal>
+      )}
+      {modal === "results" && g && (
+        <Modal title="The final score." onClose={() => setModal("")}>
+          <p className="modal-intro">
+            {g.finishReason} Remaining tile values have been settled.
+          </p>
+          <div className="results-list">
+            {[...g.players]
+              .sort((a, b) => b.score - a.score)
+              .map((p, i) => (
+                <div key={p.id}>
+                  <span>{i === 0 ? "★" : i + 1}</span>
+                  <strong>{p.name}</strong>
+                  <b>{p.score}</b>
+                </div>
+              ))}
+          </div>
+          <div className="button-row">
+            <button className="secondary" onClick={() => setModal("")}>
+              View board
+            </button>
+            <button
+              className="primary"
+              disabled={!me || busy}
+              onClick={() => void doCommand("rematch")}
+            >
+              Another round <RotateCcw size={16} />
+            </button>
+          </div>
+        </Modal>
+      )}
       {modal === "rules" && (
         <Modal
           title="A few words before we play."
@@ -1838,6 +1967,14 @@ export default function App() {
       {modal === "settings" && g && (
         <Modal title="At this table." onClose={() => setModal("")}>
           <div className="settings-list">
+            <button onClick={() => setModal("history")}>
+              <Users size={20} />
+              <span>
+                <strong>Move history</strong>
+                <small>Words, turns, and scores from this game</small>
+              </span>
+              <ArrowRight size={16} />
+            </button>
             <button
               onClick={() => {
                 exportGame(g);

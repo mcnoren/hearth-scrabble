@@ -16,7 +16,7 @@ A personal, browser-hosted Scrabble game with a shared table display and private
 
 GitHub Pages serves the static application. PeerJS's public PeerServer is used for signaling; the game state is not stored there. There is no application server, cloud database, paid account, API key, or billing configuration. Fonts are loaded from Google Fonts with local fallbacks.
 
-This uses the public PeerJS service on a best-effort basis. No free third-party service can be guaranteed to remain available forever. Direct WebRTC connections may be blocked by some corporate networks, VPNs, carrier NATs, or firewalls. Try the same Wi-Fi or a different network. This app does not depend on a paid TURN relay. You can configure your own PeerServer or ICE servers in `src/network.ts` if needed.
+This uses the public PeerJS service on a best-effort basis. No free third-party service can be guaranteed to remain available forever. Direct WebRTC connections may be blocked by some corporate networks, VPNs, carrier NATs, or firewalls. Try the same Wi-Fi or a different network. PeerJS discontinued its bundled TURN relay service in 2023. The app uses live STUN services for direct connections; it does not claim the retired TURN endpoints are working relays. Networks that block direct WebRTC need a separately configured TURN relay, which can be a free account-based service. No paid plan or billing has been enabled. You can configure your own PeerServer or ICE servers in `src/network.ts` if needed.
 
 ## How saving and host takeover work
 
@@ -38,7 +38,7 @@ This uses the public PeerJS service on a best-effort basis. No free third-party 
 
 Standard games validate words against **ENABLE**, a public-domain word list. It is not a licensed current NASPA or Collins tournament lexicon. Friendly tables can disable word validation before creation. With automatic validation, there is no challenge phase or tournament clock.
 
-Keyboard: click an empty square and type letters, arrows move the cursor, the direction control switches across/down, Backspace recalls a tile at the cursor, Enter submits, Escape clears rack selection. Phones support tapping a tile then a square. Enlarge board supports precise placement on small displays.
+Keyboard: click an empty square and type letters, arrows move the cursor, the direction control switches across/down, Backspace recalls a tile at the cursor, Enter submits, Escape clears rack selection. Phones support tapping a tile then a square. The board measures its available viewport and stays fully visible without page scrolling. The classic English board uses the familiar cream squares, red/pink/blue premiums, center star, printed distribution chart, and the classic SCRABBLE wordmark. Focus on board hides the surrounding controls to maximize the display. Move history and final scores are available in dialogs.
 
 ## Development
 
@@ -59,6 +59,6 @@ Open `http://127.0.0.1:5173/tests/network.html` while the dev server is running 
 
 ## Assets and acknowledgments
 
-Board, tiles, logo, and layout are drawn in CSS/SVG for this project. Icons: Lucide (ISC). PeerJS (MIT), QRCode (MIT), React (MIT). ENABLE dictionary: https://github.com/dolph/dictionary/blob/master/enable1.txt (public-domain source; see `THIRD_PARTY_NOTICES.md`). Typography: DM Sans and Libre Caslon Display via Google Fonts, with system fallbacks.
+Board, tiles, and layout are drawn in CSS/SVG for this project. The classic SCRABBLE wordmark is the Hasbro public-domain text logo sourced from Wikimedia Commons (https://commons.wikimedia.org/wiki/File:Scrabble_American_logo.svg); trademark ownership remains with its owner. Icons: Lucide (ISC). PeerJS (MIT), QRCode (MIT), React (MIT). ENABLE dictionary: https://github.com/dolph/dictionary/blob/master/enable1.txt (public-domain source; see `THIRD_PARTY_NOTICES.md`). Typography: DM Sans and Libre Caslon Display via Google Fonts, with system fallbacks.
 
 Unofficial personal project. SCRABBLE is a trademark of its respective owners. This project is not affiliated with or endorsed by Hasbro, Mattel, NASPA, or Collins.

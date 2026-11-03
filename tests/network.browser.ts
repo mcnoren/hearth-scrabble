@@ -50,6 +50,48 @@ function make() {
   return net;
 }
 try {
+  // A guest may arrive before the host is online. Retry must retire the failed
+  // attempt immediately instead of keeping a dead DataConnection installed.
+  const lateCode = roomCode();
+  const earlyGuest = new TableNetwork(lateCode);
+  instances.push(earlyGuest);
+  earlyGuest.start();
+  await wait(
+    () => earlyGuest.status === "error",
+    "guest reports a missing host",
+  );
+  const lateHost = new TableNetwork(lateCode, true, "Late host check");
+  instances.push(lateHost);
+  lateHost.start();
+  await wait(
+    () => lateHost.isHost,
+    "host opened after the first lookup failed",
+  );
+  earlyGuest.retry();
+  await wait(
+    () => earlyGuest.status === "connected",
+    "explicit Retry joins the newly available host",
+    10000,
+  );
+  assert(
+    earlyGuest.game?.id === lateHost.game?.id,
+    "retry receives the real host's saved game",
+  );
+  // An isolated failed WebRTC negotiation must not unregister an active host.
+  const rendezvous = (lateHost as unknown as { beacon: Peer }).beacon;
+  rendezvous.emit(
+    "error",
+    Object.assign(new Error("Simulated device negotiation failure"), {
+      type: "webrtc",
+    }),
+  );
+  assert(
+    lateHost.isHost && !rendezvous.destroyed,
+    "one failed device cannot destroy the table host",
+  );
+  earlyGuest.close();
+  lateHost.close();
+  forgetGame(lateCode);
   note("Room " + code + " — using the real public PeerJS signaling service.");
   const host = new TableNetwork(code, true, "Integration check", "friendly");
   instances.push(host);
